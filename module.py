@@ -73,6 +73,9 @@ def read_file(file):
     return url_list
 
 def write_file(source:Source, target:Target):
+    
+    with open("transfer.sh", "a", encoding='utf-8') as f:
+        print("#!/bin/bash", file=f)
 
     with open("transfer.sh", "a", encoding='utf-8') as f:
         print(source.clone_ssh(), file=f)
