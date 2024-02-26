@@ -81,7 +81,7 @@ def write_file(source:Source, target:Target):
         print(source.clone_ssh(), file=f)
         print(source.change_dir(option=True),file=f)
         print(target.push_https(),file=f)
-        print(source.change_dir(),file=f, end="\n")
+        print(source.change_dir(option=False),file=f, end="\n")
 
 def create_commands(source_list, target_list):
     if os.path.exists("transfer.sh"):
