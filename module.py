@@ -94,13 +94,16 @@ def read_file(file):
 def write_file(source:Source, target:Target):
 
     with open("transfer.sh", "a", encoding='utf-8') as f:
-        print("#!/bin/bash", file=f)
-
-    with open("transfer.sh", "a", encoding='utf-8') as f:
         print(source.clone_ssh(), file=f)
         print(target.push_https(),file=f)
 
-def create_commands(source_list, target_list):
+def create_base_file():
+    with open("transfer.sh", "w+", encoding='utf-8') as f:
+        print("#!/bin/bash", file=f)
+
+def create_commands(source_list, target_list, args):
+
+    create_base_file()
 
     for i in range(len(source_list)):
         source = get_source_url(source_list[i])
