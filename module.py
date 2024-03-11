@@ -4,17 +4,18 @@ This library is created to transfer projects across Bankalararası Kart Merkezi 
 By Ahmet Kasım Erbay: 20.02.2024 - 16:17:25
 """
 import os
+from shutil import rmtree
 
 class Source:
-    def __init__(self, header, scm_url, key, repo_name):
-        self.header = header
+    def __init__(self, scm_url, key, repo_name):
+
         self.scm_url = scm_url
         self.key = key
         self.repo_name = repo_name
 
     def repo(self):
 
-        source_clone = f"{self.header}://{self.scm_url}/scm/{self.key.upper()}/{self.repo_name}.git"
+        source_clone = f"https://{self.scm_url}/scm/{self.key.upper()}/{self.repo_name}.git"
 
         return source_clone
 
@@ -24,46 +25,64 @@ class Source:
 
     def clone_ssh(self):
 
-        return f"git clone ssh://git@{self.scm_url}:7999/{self.key.lower()}/{self.repo_name}.git"
+        return f"git clone --mirror ssh://git@{self.scm_url}:7999/{self.key.lower()}/{self.repo_name}.git"
 
     def change_dir(self, option=True):
         if option:
             return f"cd {self.repo_name}"
         return "cd .."
 
+    def introduce_object(self):
+        return { 
+                    "url": self.scm_url, 
+                    "key": self.key, 
+                    "repo_name": self.repo_name,
+                    "repo": self.repo(),
+                    "clone_https": self.clone_https(),
+                    "clone_ssh": self.clone_ssh(),
+                }
+
 class Target(Source):
 
-    def __init__(self, header, scm_url, key, repo_name):
-        super().__init__(header, scm_url, key, repo_name)
-
+    def __init__(self, scm_url, key, repo_name):
+        super().__init__(scm_url, key, repo_name)
 
     def push_https(self):
 
-        target_repo = f"{self.header}://{self.scm_url}/scm/{self.key.lower()}/{self.repo_name}.git"
+        target_repo = f"https://{self.scm_url}/scm/{self.key.lower()}/{self.repo_name}.git"
 
-        return f"git push -u {target_repo} --all"
+        return f"git -C {self.repo_name}/ push {target_repo} --all"
 
     def push_ssh(self):
 
-        return f"git push -u ssh://git@{self.scm_url}:7999/{self.key.lower()}/{self.repo_name}.git --all"
+        target_repo = f"ssh://git@{self.scm_url}:7999/{self.key.lower()}/{self.repo_name}.git"
+
+        return f"git -C {self.repo_name}/ push {target_repo} --all"
+
+    def introduce_object(self):
+        orig = super().introduce_object()
+
+        orig.update({"push_https": self.push_https(), "push_ssh":self.push_ssh()})
+
+        return orig
 
 def definer(string):
 
     splitted = string.split("/")
 
-    return splitted[0][:-1], splitted[2], splitted[4].lower(), splitted[6].lower()
+    return splitted[2], splitted[4].lower(), splitted[6].lower()
 
 def get_source_url(url):
 
-    header, scm_url, key, repo_name = definer(url)
+    scm_url, key, repo_name = definer(url)
 
-    return Source(header, scm_url, key, repo_name)
+    return Source(scm_url, key, repo_name)
 
 def get_target_url(url):
-    
-    header, scm_url, key, repo_name = definer(url)
 
-    return Target(header, scm_url, key, repo_name)
+    scm_url, key, repo_name = definer(url)
+
+    return Target(scm_url, key, repo_name)
 
 def read_file(file):
 
@@ -73,22 +92,20 @@ def read_file(file):
     return url_list
 
 def write_file(source:Source, target:Target):
-    
+
     with open("transfer.sh", "a", encoding='utf-8') as f:
         print("#!/bin/bash", file=f)
 
     with open("transfer.sh", "a", encoding='utf-8') as f:
         print(source.clone_ssh(), file=f)
-        print(source.change_dir(option=True),file=f)
         print(target.push_https(),file=f)
-        print(source.change_dir(),file=f, end="\n")
 
 def create_commands(source_list, target_list):
-    if os.path.exists("transfer.sh"):
-        os.remove("transfer.sh")
 
     for i in range(len(source_list)):
         source = get_source_url(source_list[i])
+        # print(source.introduce_object())
         target = get_target_url(target_list[i])
+        # print(target.introduce_object())
 
         write_file(source, target)
