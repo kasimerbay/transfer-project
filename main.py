@@ -11,8 +11,8 @@ def main():
     source_list = read_file("source.txt")
     target_list = read_file("target.txt")
 
-    create_commands(source_list, target_list, args)
-    rmtree("__pycache__/")
+    create_commands(source_list, target_list)
+
 
 if __name__ == "__main__":
     main()

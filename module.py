@@ -3,8 +3,8 @@ This library is created to transfer projects across Bankalararası Kart Merkezi 
 
 By Ahmet Kasım Erbay: 20.02.2024 - 16:17:25
 """
-import os
-from shutil import rmtree
+
+
 
 class Source:
     def __init__(self, scm_url, key, repo_name):
@@ -51,13 +51,13 @@ class Target(Source):
 
         target_repo = f"https://{self.scm_url}/scm/{self.key.lower()}/{self.repo_name}.git"
 
-        return f"git -C {self.repo_name}/ push {target_repo} --all"
+        return f"git -C {self.repo_name}.git/ push {target_repo} --all"
 
     def push_ssh(self):
 
         target_repo = f"ssh://git@{self.scm_url}:7999/{self.key.lower()}/{self.repo_name}.git"
 
-        return f"git -C {self.repo_name}/ push {target_repo} --all"
+        return f"git -C {self.repo_name}.git/ push {target_repo} --all"
 
     def introduce_object(self):
         orig = super().introduce_object()
@@ -91,24 +91,53 @@ def read_file(file):
 
     return url_list
 
+def create_commands(source_list, target_list):
+
+    sources = [get_source_url(i) for i in source_list]
+    targets = [get_target_url(i) for i in target_list]
+
+    write_file(sources, targets)
+
+def write_file(sources, targets):
+
+    create_base_file()
+    append_sources(sources)
+    append_targets(targets)
+
+def create_base_file():
+    with open("transfer.sh", "w+", encoding='utf-8') as f:
+        print("#!/bin/bash", file=f)
+
+def append_sources(sources):
+    with open("transfer.sh", "a", encoding='utf-8') as f:
+        for source in sources:
+            print(source.clone_https(), file=f)
+
+def append_targets(targets):
+    with open("transfer.sh", "a", encoding='utf-8') as f:
+        for target in targets:
+            print(target.push_https(), file=f)
+
+"""
 def write_file(source:Source, target:Target):
 
     with open("transfer.sh", "a", encoding='utf-8') as f:
-        print(source.clone_ssh(), file=f)
+        print(source.clone_https(), file=f)
         print(target.push_https(),file=f)
 
 def create_base_file():
     with open("transfer.sh", "w+", encoding='utf-8') as f:
         print("#!/bin/bash", file=f)
 
-def create_commands(source_list, target_list, args):
+
+def create_commands(source_list, target_list):
 
     create_base_file()
 
     for i in range(len(source_list)):
+
         source = get_source_url(source_list[i])
-        # print(source.introduce_object())
         target = get_target_url(target_list[i])
-        # print(target.introduce_object())
 
         write_file(source, target)
+"""
