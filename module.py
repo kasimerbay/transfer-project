@@ -117,27 +117,3 @@ def append_targets(targets):
     with open("transfer.sh", "a", encoding='utf-8') as f:
         for target in targets:
             print(target.push_https(), file=f)
-
-"""
-def write_file(source:Source, target:Target):
-
-    with open("transfer.sh", "a", encoding='utf-8') as f:
-        print(source.clone_https(), file=f)
-        print(target.push_https(),file=f)
-
-def create_base_file():
-    with open("transfer.sh", "w+", encoding='utf-8') as f:
-        print("#!/bin/bash", file=f)
-
-
-def create_commands(source_list, target_list):
-
-    create_base_file()
-
-    for i in range(len(source_list)):
-
-        source = get_source_url(source_list[i])
-        target = get_target_url(target_list[i])
-
-        write_file(source, target)
-"""
