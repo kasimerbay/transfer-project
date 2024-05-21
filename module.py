@@ -4,8 +4,6 @@ This library is created to transfer projects across Bankalararası Kart Merkezi 
 By Ahmet Kasım Erbay: 20.02.2024 - 16:17:25
 """
 
-
-
 class Source:
     def __init__(self, scm_url, key, repo_name):
 
