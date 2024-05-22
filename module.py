@@ -13,7 +13,7 @@ class Source:
 
     def repo(self):
 
-        source_clone = f"https://{self.scm_url}/scm/{self.key.upper()}/{self.repo_name}.git"
+        source_clone = f"https://aherbay@{self.scm_url}/scm/{self.key.upper()}/{self.repo_name}.git"
 
         return source_clone
 
@@ -47,7 +47,7 @@ class Target(Source):
 
     def push_https(self):
 
-        target_repo = f"https://{self.scm_url}/scm/{self.key.lower()}/{self.repo_name}.git"
+        target_repo = f"https://aherbay@{self.scm_url}/scm/{self.key.lower()}/{self.repo_name}.git"
 
         return f"git -C {self.repo_name}.git/ push {target_repo} --all"
 
@@ -115,3 +115,9 @@ def append_targets(targets):
     with open("transfer.sh", "a", encoding='utf-8') as f:
         for target in targets:
             print(target.push_https(), file=f)
+
+def get_repos(api_call):
+
+    with open("repos/repo_list.txt", "w") as f:
+        for i in range(int(api_call["size"])):
+            print(api_call["values"][i]["name"], file=f)

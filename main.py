@@ -13,6 +13,5 @@ def main():
 
     create_commands(source_list, target_list)
 
-
 if __name__ == "__main__":
     main()
