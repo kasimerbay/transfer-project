@@ -129,7 +129,7 @@ def get_repos(api_call):
 
     return repo_list
 
-def source_scm_call(SOURCE_SCM="bitbucket.bkm.com.tr", KEY="SWC", USER="aherbay"):
+def source_scm_call(SOURCE_SCM="bitbucket.bkm.com.tr", KEY="SWC", USER="devops_admin"):
 
     commands = [
         "touch dels/bitbucket_json.py",
