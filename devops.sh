@@ -1,22 +1,8 @@
 #!/bin/bash
 
-if test -f ./source.txt
-then
-    > source.txt
-else
-	touch ./source.txt
-fi
-
-if test -f ./target.txt
-then
-    > target.txt
-else
-	touch ./target.txt
-fi
-
-if test -f ./transfer.sh
-then
-    > transfer.sh && echo "Old transfer data has been deleted now.\nPlease update the source and target repos"
-else
-	python3 ./main.py
-fi
+touch dels/bitbucket_json.py
+echo -n 'repos=' > dels/bitbucket_json.py
+curl -k -u$USER https://$SOURCE_SCM/rest/api/1.0/projects/$KEY/repos?limit=100 >> dels/bitbucket_json.py
+sed -i 's/true/True/g' dels/bitbucket_json.py
+sed -i 's/false/False/g' dels/bitbucket_json.py
+python3 main.py $USER $KEY $SOURCE_SCM $TARGET_SCM
