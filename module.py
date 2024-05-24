@@ -33,7 +33,7 @@ class Source:
         return "cd .."
 
     def introduce_object(self):
-        return { 
+        return {
                     "url": self.scm_url, 
                     "key": self.key, 
                     "repo_name": self.repo_name,
@@ -158,12 +158,16 @@ def clone_repos(source_scm, key, repo_names, user):
 
         try:
             print(f"# Starting to clone {repo.repo_name}")
-            os.popen(repo.clone_https())
+            print(repo.clone_https())
+            command = os.popen(repo.clone_https())
+            command.read().strip()
+            command.close()
             print()
         except:
             print("There was a problem cloning with {repo.repo_name}")
             print()
             continue
+
     print("Starting to push all repos...", end="\n\n")
 
 def push_repos(target_scm, key, repo_names, user):
@@ -173,15 +177,12 @@ def push_repos(target_scm, key, repo_names, user):
 
             try:
                 print(f"# Starting to push {repo.repo_name}")
-                os.popen(repo.push_https())
+                print(repo.push_https())
+                command = os.popen(repo.push_https())
+                command.read().strip()
+                command.close()
                 print()
             except:
                 print("There was a problem pushing with {repo.repo_name}")
                 print()
                 continue
-
-def delete_files():
-    print("Files are being deleted!")
-    os.popen("rm -rf dels/* && rm -rf repos/*")
-    print("Files are deleted! ")
-    print("Repositories are successfully transferred!")
