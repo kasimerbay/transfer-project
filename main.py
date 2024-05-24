@@ -21,7 +21,6 @@ def main():
 
     push_repos(target_scm, key, repo_names, user)
 
-    delete_files()
 
 if __name__ == "__main__":
     main()
