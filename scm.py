@@ -31,7 +31,8 @@ class Instance:
     def run(self, command):
 
         command = os.popen(command)
-        print(f"\n\nSuccessfully connected to {self.instance}",end="\n\n")
+        output = command.read().strip()
+
         return command
 
 class Project(Instance):
@@ -94,7 +95,6 @@ class Project(Instance):
                 print("* ", error_repo)
             print(f"Total: {len(error_list)}")
 
-        print(f"\n\nYour project {repo.key} is successfully transferred from {repo.instance} to {target_scm}")
 
 class Repository(Project):
 
@@ -108,7 +108,6 @@ class Repository(Project):
         clone_ = f"https://{self.user}@{self.instance}/scm/{self.key.upper()}/{self.repo_name}.git repos/{self.repo_name}"
         command = f"git clone --mirror {clone_}"
 
-        print(f"# Starting to clone {self.repo_name}", end="\n\n")
         self.run(command)
 
     def push(self, target_scm):
@@ -116,5 +115,4 @@ class Repository(Project):
         push_ = f"https://{self.user}@{target_scm}/scm/{self.key.lower()}/{self.repo_name}.git"
         command = f"git -C repos/{self.repo_name} push {push_} --all"
 
-        print(f"# Starting to push {self.repo_name}", end="\n\n")
         self.run(command)
