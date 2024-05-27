@@ -18,20 +18,24 @@ class Instance:
 
     @staticmethod
     def api_to_json(api_call):
+
         to_replace = {"true":"True", "false":"False"}
-        output = api_call.read().strip()
+
+        output = api_call.read()
 
         for key, value in to_replace.items():
             output.replace(key, value)
+
         try:
             return json.loads(output)
+
         except:
             raise Exception("Could not convert stream to json... Try to update your API object")
+
 
     def run(self, command):
 
         command = os.popen(command)
-        output = command.read().strip()
 
         return command
 
@@ -52,7 +56,7 @@ class Project(Instance):
         return repository_list, size, is_last_page
 
     def mirror_repos(self, repo_list, target_scm):
-        repo_list = repo_list.split(",")
+
         repository_list, _, _ = self.project_info()
         error_list = []
 
@@ -78,22 +82,8 @@ class Project(Instance):
     def mirror(self, target_scm):
 
         repository_list, _, _ = self.project_info()
-        error_list = []
 
-        for repo_name in repository_list:
-            try:
-                repo = Repository(self.instance, self.user, self.key, repo_name)
-                repo.clone()
-                repo.push(target_scm)
-            except:
-                error_list.append(repo_name)
-                continue
-
-        if len(error_list)!= 0:
-            print("\n\n------ List of untransferred repositories:")
-            for error_repo in error_list:
-                print("* ", error_repo)
-            print(f"Total: {len(error_list)}")
+        return self.mirror_repos(repository_list, target_scm)
 
 
 class Repository(Project):
