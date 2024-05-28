@@ -4,40 +4,20 @@ This library is created to transfer projects across Bankalararası Kart Merkezi 
 By Ahmet Kasım Erbay: 20.02.2024 - 16:17:25
 """
 
-import os, json
+import subprocess
+from dels.bitbucket_json import repos
 
 class Instance:
     def __init__(self, instance, user):
         self.instance = instance
         self.user = user
 
-    def get_projects(self):
-        projects = self.api_to_json(self.run(f"curl -k -u{self.user} https://{self.instance}:/rest/api/1.0/projects/?limit=100"))
-
-        print([projects["values"][i]["key"] for i in range(int(projects["size"]))])
-
-    @staticmethod
-    def api_to_json(api_call):
-
-        to_replace = {"true":"True", "false":"False"}
-
-        output = api_call.read()
-
-        for key, value in to_replace.items():
-            output.replace(key, value)
-
-        try:
-            return json.loads(output)
-
-        except:
-            raise Exception("Could not convert stream to json... Try to update your API object")
-
+    def get_repos(self):
+        return [repos["values"][i]["name"] for i in range(int(repos["size"]))]
 
     def run(self, command):
-
-        command = os.popen(command)
-
-        return command
+        print(command)
+        subprocess.run(command.split(" "))
 
 class Project(Instance):
 
@@ -45,19 +25,11 @@ class Project(Instance):
         self.key = key
         super().__init__(instance, user)
 
-    def project_info(self):
-        stream = self.run(f"curl -k -u{self.user} https://{self.instance}/rest/api/1.0/projects/{self.key}/repos?limit=100")
-        api_call = self.api_to_json(stream)
-
-        repository_list = [api_call["values"][i]["name"] for i in range(int(api_call["size"]))]
-        size = api_call["size"]
-        is_last_page = api_call["isLastPage"]
-
-        return repository_list, size, is_last_page
 
     def mirror_repos(self, repo_list, target_scm):
 
-        repository_list, _, _ = self.project_info()
+        repository_list = self.get_repos()
+
         error_list = []
 
         for repo_name in repo_list:
@@ -67,7 +39,7 @@ class Project(Instance):
                     repo.clone()
                     repo.push(target_scm)
                 except:
-                    error_list.append(f"{repo_name} -- " + "Clone Error!")
+                    error_list.append(f"{repo_name} -- " + "Clone or Push Error!")
                     continue
             else:
                 error_list.append(f"{repo_name} -- " + f"There is no {repo_name} in the remote {self.instance}. Please Check!")
@@ -81,7 +53,7 @@ class Project(Instance):
 
     def mirror(self, target_scm):
 
-        repository_list, _, _ = self.project_info()
+        repository_list = self.get_repos()
 
         return self.mirror_repos(repository_list, target_scm)
 
