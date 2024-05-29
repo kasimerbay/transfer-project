@@ -5,19 +5,39 @@ By Ahmet Kasım Erbay: 20.02.2024 - 16:17:25
 """
 
 import subprocess
-from dels.bitbucket_json import repos
+
 
 class Instance:
     def __init__(self, instance, user):
         self.instance = instance
         self.user = user
 
-    def get_repos(self):
-        return [repos["values"][i]["name"] for i in range(int(repos["size"]))]
+    def api_to_json(self, api_call):
+        words = {"true":"True", "false":"False"}
+
+        for key,value in words.items():
+            api_call = api_call.replace(key, value)
+
+        try:
+            api_call = eval(api_call)
+        except:
+            raise Exception(f"Please be sure {self.user[:self.user.index(':')]} has right permissions in {self.key} on {self.instance}")
+
+        return api_call
+
+    def list_projects(self):
+
+        command = f"curl -k -u{self.user} https://{self.instance}/rest/api/1.0/projects?limit=100"
+
+        api_call = self.run(command)
+        api_call = self.api_to_json(api_call)
+
+        return [api_call["values"][i]["key"] for i in range(int(api_call["size"]))]
 
     def run(self, command):
-        print(command)
-        subprocess.run(command.split(" "))
+
+        return subprocess.run(command.split(" "), cwd=".", stdout=subprocess.PIPE).stdout.decode("utf-8")
+
 
 class Project(Instance):
 
@@ -25,10 +45,17 @@ class Project(Instance):
         self.key = key
         super().__init__(instance, user)
 
+    def list_repositories(self):
+        command = f"curl -k -u{self.user} https://{self.instance}/rest/api/1.0/projects/{self.key}/repos?limit=100"
+
+        api_call = self.run(command)
+        api_call = self.api_to_json(api_call)
+
+        return [api_call["values"][i]["name"] for i in range(int(api_call["size"]))]
 
     def mirror_repos(self, repo_list, target_scm):
 
-        repository_list = self.get_repos()
+        repository_list = self.list_repositories()
 
         error_list = []
 
@@ -37,12 +64,13 @@ class Project(Instance):
                 try:
                     repo = Repository(self.instance, self.user, self.key, repo_name)
                     repo.clone()
-                    repo.push(target_scm)
+                    repo.push(target_scm=target_scm)
                 except:
                     error_list.append(f"{repo_name} -- " + "Clone or Push Error!")
                     continue
             else:
                 error_list.append(f"{repo_name} -- " + f"There is no {repo_name} in the remote {self.instance}. Please Check!")
+
 
         if len(error_list)!= 0:
             print("\n\n------ List of untransferred repositories:")
@@ -53,9 +81,12 @@ class Project(Instance):
 
     def mirror(self, target_scm):
 
-        repository_list = self.get_repos()
+        repository_list = self.list_repositories()
 
-        return self.mirror_repos(repository_list, target_scm)
+        return self.mirror_repos(repo_list=repository_list, target_scm=target_scm)
+
+    def create_repository(self):
+        pass
 
 
 class Repository(Project):
