@@ -35,12 +35,13 @@ class Instance:
         return [api_call["values"][i]["key"] for i in range(int(api_call["size"]))]
 
     def run(self, command):
-        # print(command)
+        print(command)
         return subprocess.run(command.split(" "), cwd=".", stdout=subprocess.PIPE, stderr=subprocess.PIPE).stdout.decode("utf-8")
 
     def run_post(self, command):
         stream = os.popen(command)
         output = stream.read().strip()
+        print(output)
 
         return output
 
@@ -61,22 +62,24 @@ class Project(Instance):
 
     def mirror_repos(self, repo_list, target_scm):
 
-        repository_list = self.list_repositories()
+        target = Project(instance=target_scm, user=self.user, key=self.key)
+        repository_list = target.list_repositories()
 
         error_list = []
 
+        # If target has some missing repositories, this loop creates them
         for repo_name in repo_list:
-            if repo_name in repository_list:
-                try:
-                    repo = Repository(self.instance, self.user, self.key, repo_name)
-                    repo.clone()
-                    repo.push(target_scm=target_scm)
-                except:
-                    error_list.append(f"{repo_name} -- " + "Clone or Push Error!")
-                    continue
-            else:
-                error_list.append(f"{repo_name} -- " + f"There is no {repo_name} in the remote {self.instance}. Please Check!")
+            if repo_name not in repository_list:
+                Repository(instance=target_scm, user=self.user, key=self.key, repo_name=repo_name).create_repository()
 
+        for repo_name in repo_list:
+            try:
+                repo = Repository(self.instance, self.user, self.key, repo_name)
+                repo.clone()
+                repo.push(target_scm=target_scm)
+            except:
+                error_list.append(f"{repo_name} -- " + "Clone or Push Error!")
+                continue
 
         if len(error_list)!= 0:
             print("\n\n------ List of untransferred repositories:")
@@ -102,26 +105,24 @@ class Repository(Project):
         clone_ = f"https://{self.user}@{self.instance}/scm/{self.key.upper()}/{self.repo_name}.git repos/{self.repo_name}"
         command = f"git clone --mirror {clone_}"
 
-        self.run(command)
+        self.run_post(command)
 
     def push(self, target_scm):
 
         push_ = f"https://{self.user}@{target_scm}/scm/{self.key.lower()}/{self.repo_name}.git"
         command = f"git -C repos/{self.repo_name} push {push_} --all"
 
-        self.run(command)
+        self.run_post(command)
 
-    def create_repository(self, target_scm):
+    def create_repository(self):
 
         DICT = dict()
-
         PROJECT = """{"key":"%s","avatarUrl":"","avatar":"","links":%s}"""%(self.key,DICT)
-
         DATA = """{"name":"%s","project":%s,"slug":"%s","scmId":"git","links":%s}"""%(self.repo_name,PROJECT,self.repo_name,DICT)
 
-        command = f"curl -u '{self.user}' --request POST --url 'https://{target_scm}/rest/api/latest/projects/{self.key}/repos' --header 'Accept:application/json' --header 'Content-Type:application/json' --data '{DATA}'"
+        command = f"curl -u '{self.user}' --request POST --url 'https://{self.instance}/rest/api/latest/projects/{self.key}/repos' --header 'Accept:application/json' --header 'Content-Type:application/json' --data '{DATA}'"
 
         try:
             self.run_post(command)
         except:
-            raise Exception(f"There is a problem occured in creation of {self.repo_name} on {target_scm}.")
+            raise Exception(f"There is a problem occured in creation of {self.repo_name} on {self.instance}.")
