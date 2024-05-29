@@ -21,7 +21,7 @@ class Instance:
         try:
             api_call = eval(api_call)
         except:
-            raise Exception(f"Please be sure {self.user[:self.user.index(':')]} has right permissions in {self.key} on {self.instance}")
+            raise Exception(f"Please be sure {self.user[:self.user.index(':')]} has right permissions in {self.key} on {self.instance}.\nOr this means your api_call returned an empty string.")
 
         return api_call
 
