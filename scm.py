@@ -4,7 +4,7 @@ This library is created to transfer projects across Bankalararası Kart Merkezi 
 By Ahmet Kasım Erbay: 20.02.2024 - 16:17:25
 """
 
-import subprocess
+import subprocess,os
 
 
 class Instance:
@@ -35,8 +35,14 @@ class Instance:
         return [api_call["values"][i]["key"] for i in range(int(api_call["size"]))]
 
     def run(self, command):
+        # print(command)
+        return subprocess.run(command.split(" "), cwd=".", stdout=subprocess.PIPE, stderr=subprocess.PIPE).stdout.decode("utf-8")
 
-        return subprocess.run(command.split(" "), cwd=".", stdout=subprocess.PIPE).stdout.decode("utf-8")
+    def run_post(self, command):
+        stream = os.popen(command)
+        output = stream.read().strip()
+
+        return output
 
 
 class Project(Instance):
@@ -78,15 +84,11 @@ class Project(Instance):
                 print("* ", error_repo)
             print(f"Total: {len(error_list)}")
 
-
     def mirror(self, target_scm):
 
         repository_list = self.list_repositories()
 
         return self.mirror_repos(repo_list=repository_list, target_scm=target_scm)
-
-    def create_repository(self):
-        pass
 
 
 class Repository(Project):
@@ -94,7 +96,6 @@ class Repository(Project):
     def __init__(self, instance, user, key, repo_name):
         self.repo_name = repo_name
         super().__init__(instance, user, key)
-
 
     def clone(self):
 
@@ -109,3 +110,18 @@ class Repository(Project):
         command = f"git -C repos/{self.repo_name} push {push_} --all"
 
         self.run(command)
+
+    def create_repository(self, target_scm):
+
+        DICT = dict()
+
+        PROJECT = """{"key":"%s","avatarUrl":"","avatar":"","links":%s}"""%(self.key,DICT)
+
+        DATA = """{"name":"%s","project":%s,"slug":"%s","scmId":"git","links":%s}"""%(self.repo_name,PROJECT,self.repo_name,DICT)
+
+        command = f"curl -u '{self.user}' --request POST --url 'https://{target_scm}/rest/api/latest/projects/{self.key}/repos' --header 'Accept:application/json' --header 'Content-Type:application/json' --data '{DATA}'"
+
+        try:
+            self.run_post(command)
+        except:
+            raise Exception(f"There is a problem occured in creation of {self.repo_name} on {target_scm}.")
