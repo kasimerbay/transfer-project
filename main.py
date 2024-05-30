@@ -17,7 +17,7 @@ def main():
 
     project = Project(instance=INSTANCE, user=USER, key=KEY)
 
-    project.mirror(TARGET_SCM)
+    project.mirror(target_scm=TARGET_SCM)
 
 
 if __name__ == "__main__":
