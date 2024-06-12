@@ -4,12 +4,10 @@ This library is created to transfer projects across Bankalararası Kart Merkezi 
 By Ahmet Kasım Erbay: 20.02.2024 - 16:17:25
 """
 
-from queue import Empty
 import subprocess,os
 
 
 class Instance:
-    print("Welcome!, You'r privileged to work with the Atlassian Prince... Enjoy the show :)", end="\n\n")
     def __init__(self, instance, user):
         self.instance = instance
         self.user = user
@@ -29,25 +27,89 @@ class Instance:
 
     def list_projects(self):
 
-        command = f"curl -k -u{self.user} https://{self.instance}/rest/api/1.0/projects?limit=100"
+        command = f"curl -k -u'{self.user}' https://{self.instance}/rest/api/1.0/projects?limit=100"
 
-        api_call = self.run(command)
+        api_call = self.run_post(command)
         api_call = self.api_to_json(api_call)
 
         return [api_call["values"][i]["key"] for i in range(int(api_call["size"]))]
+
+    def list_users(self):
+        command = f"""curl -u'{self.user}' --request GET --url 'https://{self.instance}/rest/api/latest/users?limit=100' --header 'Accept:application/json'"""
+
+        api_call = self.run_post(command)
+        api_call = self.api_to_json(api_call)
+
+        return [api_call["values"][i]["name"] for i in range(int(api_call["size"]))]
+
+    def user_list(self):
+        command = f"""curl -u'{self.user}' --request GET --url 'https://{self.instance}/rest/api/latest/users?limit=100' --header 'Accept:application/json'"""
+
+        api_call = self.run_post(command)
+        api_call = self.api_to_json(api_call)
+
+        users = [api_call["values"][i] for i in range(int(api_call["size"]))]
+
+        return [(user["name"], user["emailAddress"], user["displayName"]) for user in users]
+
+    def delete_all_projects(self):
+    
+        project_keys = Instance(instance=self.instance, user=self.user).list_projects()
+
+        for key in project_keys:
+            Project(instance=self.instance, key=key, user=self.user).delete_project()
 
     def run(self, command):
         print(command)
         return subprocess.run(command.split(" "), cwd=".", stdout=subprocess.PIPE, stderr=subprocess.PIPE).stdout.decode("utf-8")
 
     def run_post(self, command):
-        
+        print(command)
         stream = os.popen(command)
         output = stream.read().strip()
         print(output)
-
         return output
 
+class User(Instance):
+    def __init__(self, instance, user, name, display_name, email):
+        self.name = name
+        self.display_name = display_name
+        self.email = email
+        self.password = "changeme123"
+        super().__init__(instance, user)
+
+    def create_user(self):
+        create_user = f"""curl -u'{self.user}' --request POST --url 'https://{self.instance}/rest/api/latest/admin/users?emailAddress={self.email}&password={self.password}&displayName={self.display_name}&name={self.name}' -H "X-Atlassian-Token:no-check" """
+
+        self.run_post(create_user)
+
+    def delete_user(self):
+        delete_user = f"""curl -u'{self.user}' --request DELETE --url 'https://{self.instance}/rest/api/latest/admin/users?name={self.name}' --header 'Accept:application/json' """
+
+        self.run_post(delete_user)
+
+    def mirror_users(self, target_scm):
+
+        user_list_source = Instance(instance=self.instance, user=self.user).user_list()
+        user_list_target = Instance(instance=target_scm, user=self.user).list_users()
+
+        untransferred_users = []
+
+        for user in user_list_source:
+            if user[0] not in user_list_target:
+                try:
+                    User(instance=target_scm, user=self.user, name=user[0], email=user[1], display_name="".join(user[2].split(" "))).create_user()
+                except:
+                    untransferred_users.append(user[0])
+                    raise Exception(f"Could not create user {user[0]} in {target_scm}")
+            else:
+                untransferred_users.append(user[0])
+
+        print("\nUsers that are not transferred here;", end="\n")
+        print(f"They are either already exist in {target_scm}, or contact your admin!", end="\n")
+
+        for name in untransferred_users:
+            print(name)
 
 class Project(Instance):
 
@@ -59,7 +121,7 @@ class Project(Instance):
         command = f"curl -k -u{self.user} https://{self.instance}/rest/api/1.0/projects/{self.key}/repos?limit=100"
         try:
 
-            api_call = self.run(command)
+            api_call = self.run_post(command)
             api_call = self.api_to_json(api_call)
 
             return [api_call["values"][i]["name"] for i in range(int(api_call["size"]))]
@@ -72,7 +134,9 @@ class Project(Instance):
 
         error_list = []
         # If target does not have the project, this for loop creates the project
-        if target.key not in target.list_projects():
+        target_projects = target.list_projects()
+
+        if target.key not in target_projects:
             target.create_project()
 
         repository_list = target.list_repositories()
@@ -103,7 +167,7 @@ class Project(Instance):
         return self.mirror_repos(repo_list=repository_list, target_scm=target_scm)
 
     def create_project(self):
-        
+
         PROJECT_URL = f'https://{self.instance}/rest/api/latest/projects'
         DICT = dict()
         create_project = """curl --request POST -u %s --url '%s' --header 'Accept:application/json' --header 'Content-Type:application/json' --data '{"key":"%s","avatarUrl":"","avatar":"","links": %s}'"""%(self.user, PROJECT_URL, self.key ,DICT)
@@ -112,7 +176,6 @@ class Project(Instance):
             self.run_post(create_project)
         except:
             raise Exception(f"Could not create {self.key} on {self.instance}.")
-
 
     def delete_project(self):
 
@@ -126,7 +189,7 @@ class Project(Instance):
                 print(f"\nFollowing repositories will be deleted\n\n")
 
                 for repo_name in repo_list:
-                    print(repo_name)
+                    print("* ",repo_name)
 
             if repo_list:
                 for repo_name in repo_list:
@@ -137,7 +200,7 @@ class Project(Instance):
                         print("Project deleted")
             else:
                 self.run_post(delete_project)
-                print("Project deleted")
+                print(f"{self.key} deleted")
 
         except:
             raise Exception(f"Could not delete {self.key} on {self.instance}. It may not be exists or {self.user[:self.user.index(':')]} does not have admin permission, or your project is not empty.")
