@@ -7,6 +7,68 @@ By Ahmet Kasım Erbay: 20.02.2024 - 16:17:25
 import subprocess,os
 
 
+class Admin:
+    def __init__(self, instance, user):
+        self.instance = instance
+        self.user = user
+
+    def delete_all_projects(self):
+
+        project_keys = Instance(instance=self.instance, user=self.user).list_projects()
+        undeleted_projects = []
+
+        for key in project_keys:
+            try:
+                Project(instance=self.instance, key=key, user=self.user).delete_project()
+            except:
+                undeleted_projects.append(key)
+
+        print(f"\nList of undeleted projects in {self.instance}:\n")
+        for key in undeleted_projects:
+            print(key)
+
+    def delete_all_groups(self):
+        group_list = Instance(instance=self.instance, user=self.user).list_groups()
+
+        undeleted_groups = []
+
+        for group_name in group_list:
+            if group_name != 'stash-users':
+                try:
+                    Group(instance=self.instance, user=self.user, group_name=group_name).delete_group()
+                    
+                except:
+                    undeleted_groups.append(group_name)
+            else:
+                undeleted_groups.append(group_name)
+
+        print(f"\nList of undeleted groups in {self.instance}:\n")
+        for group_name in undeleted_groups:
+            print(group_name)
+        pass
+
+    def delete_users(self, user_list):
+
+        existing_users = Instance(instance=self.instance, user=self.user).user_list()
+        undeleted_users = []
+
+        for user in existing_users:
+            if user[0] in user_list:
+                try:
+                    User(instance=self.instance, user=self.user, name=user[0], display_name=user[1], email=user[2]).delete_user()
+                except:
+                    undeleted_users.append(user[0])
+            else:
+                undeleted_users.append(user[0])
+
+        print(f"\nList of undeleted users in {self.instance}:\n")
+        for user_name in undeleted_users:
+            print(user_name)
+
+    def delete_all_users(self):
+        pass
+
+
 class Instance:
     def __init__(self, instance, user):
         self.instance = instance
@@ -25,40 +87,6 @@ class Instance:
 
         return api_call
 
-    def list_projects(self):
-
-        command = f"curl -k -u'{self.user}' https://{self.instance}/rest/api/1.0/projects?limit=100"
-
-        api_call = self.run_post(command)
-        api_call = self.api_to_json(api_call)
-
-        return [api_call["values"][i]["key"] for i in range(int(api_call["size"]))]
-
-    def list_users(self):
-        command = f"""curl -u'{self.user}' --request GET --url 'https://{self.instance}/rest/api/latest/users?limit=100' --header 'Accept:application/json'"""
-
-        api_call = self.run_post(command)
-        api_call = self.api_to_json(api_call)
-
-        return [api_call["values"][i]["name"] for i in range(int(api_call["size"]))]
-
-    def user_list(self):
-        command = f"""curl -u'{self.user}' --request GET --url 'https://{self.instance}/rest/api/latest/users?limit=100' --header 'Accept:application/json'"""
-
-        api_call = self.run_post(command)
-        api_call = self.api_to_json(api_call)
-
-        users = [api_call["values"][i] for i in range(int(api_call["size"]))]
-
-        return [(user["name"], user["emailAddress"], user["displayName"]) for user in users]
-
-    def delete_all_projects(self):
-    
-        project_keys = Instance(instance=self.instance, user=self.user).list_projects()
-
-        for key in project_keys:
-            Project(instance=self.instance, key=key, user=self.user).delete_project()
-
     def run(self, command):
         print(command)
         return subprocess.run(command.split(" "), cwd=".", stdout=subprocess.PIPE, stderr=subprocess.PIPE).stdout.decode("utf-8")
@@ -69,6 +97,90 @@ class Instance:
         output = stream.read().strip()
         print(output)
         return output
+
+    def list_projects(self):
+
+        command = f"curl -k -u'{self.user}' https://{self.instance}/rest/api/1.0/projects?limit=100"
+
+        api_call = self.run_post(command)
+        api_call = self.api_to_json(api_call)
+
+        return [api_call["values"][i]["key"] for i in range(int(api_call["size"]))]
+
+    def project_list(self):
+        command = f"curl -k -u'{self.user}' https://{self.instance}/rest/api/1.0/projects?limit=100"
+
+        api_call = self.run_post(command)
+        api_call = self.api_to_json(api_call)
+
+        projects = [api_call["values"][i] for i in range(int(api_call["size"]))]
+        return [(projects[i]["key"], projects[i]["name"]) for i in range(len(projects))]
+
+    def list_groups(self):
+
+            list_groups = f"""curl -u'{self.user}' --request GET --url 'https://{self.instance}/rest/api/latest/admin/groups?limit=800' --header 'Accept:application/json' """
+            api_call = self.run_post(list_groups)
+            api_call = self.api_to_json(api_call)
+
+            groups = [api_call["values"][i]["name"] for i in range(int(api_call["size"]))]
+
+            return groups
+
+    def list_users(self):
+        command = f"""curl -u'{self.user}' --request GET --url 'https://{self.instance}/rest/api/latest/users?limit=1000' --header 'Accept:application/json'"""
+
+        api_call = self.run_post(command)
+        api_call = self.api_to_json(api_call)
+
+        return [api_call["values"][i]["name"] for i in range(int(api_call["size"]))]
+
+    def user_list(self):
+        command = f"""curl -u'{self.user}' --request GET --url 'https://{self.instance}/rest/api/latest/users?limit=1000' --header 'Accept:application/json'"""
+
+        api_call = self.run_post(command)
+        api_call = self.api_to_json(api_call)
+
+        users = [api_call["values"][i] for i in range(int(api_call["size"]))]
+
+        return [(user["name"], user["displayName"], user["emailAddress"]) for user in users]
+
+
+class Group(Instance):
+    def __init__(self, instance, user, group_name):
+        self.group_name = group_name
+        super().__init__(instance, user)
+
+    def create_group(self):
+
+        create_group = f"""curl -u'{self.user}' --request POST --url 'https://{self.instance}/rest/api/latest/admin/groups?name={self.group_name}' --header 'Accept:application/json' -H "X-Atlassian-Token:no-check" """
+
+        self.run_post(create_group)
+
+    def delete_group(self):
+        
+        delete_group = f"""curl -u'{self.user}' --request DELETE --url 'https://{self.instance}/rest/api/latest/admin/groups?name={self.group_name}' --header 'Accept:application/json' -H "X-Atlassian-Token:no-check" """
+
+        self.run_post(delete_group)
+
+    def mirror_groups(self, target_scm):
+        group_list_source = self.list_groups()
+        group_list_target = Instance(instance=target_scm, user=self.user).list_groups()
+
+        untransferred_groups = []
+
+        for group_name in group_list_source:
+            if group_name not in group_list_target:
+                try:
+                    Group(instance=self.instance, user=self.user, group_name=group_name).create_group()
+                except:
+                    untransferred_groups.append(group_name)
+            else:
+                untransferred_groups.append(group_name)
+
+        print(f"\nList of untransferred groups:\n")
+        for group_name in untransferred_groups:
+            print(group_name)
+
 
 class User(Instance):
     def __init__(self, instance, user, name, display_name, email):
@@ -110,9 +222,9 @@ class User(Instance):
 
         for name in untransferred_users:
             print(name)
+     
 
 class Project(Instance):
-
     def __init__(self, instance, user, key):
         self.key = key
         super().__init__(instance, user)
@@ -120,13 +232,30 @@ class Project(Instance):
     def list_repositories(self):
         command = f"curl -k -u{self.user} https://{self.instance}/rest/api/1.0/projects/{self.key}/repos?limit=100"
         try:
-
             api_call = self.run_post(command)
             api_call = self.api_to_json(api_call)
 
             return [api_call["values"][i]["name"] for i in range(int(api_call["size"]))]
         except:
             return []
+
+    def get_project_group_permissions(self):
+        
+        project_group_permissions = f"""curl -u'{self.user}' --request GET --url 'https://{self.instance}/rest/api/latest/projects/{self.key}/permissions/groups?limit=300' --header 'Accept:application/json' """
+
+        api_call = self.run_post(project_group_permissions)
+        api_call = self.api_to_json(api_call)
+
+        return [(api_call["values"][i]["group"]["name"],api_call["values"][i]["permission"]) for i in range(int(api_call["size"]))]
+
+    def get_project_user_permissions(self):
+        
+        project_user_permissions = f"""curl -u'{self.user}' --request GET --url 'https://{self.instance}/rest/api/latest/projects/{self.key}/permissions/users' --header 'Accept:application/json'"""
+
+        api_call = self.run_post(project_user_permissions)
+        api_call = self.api_to_json(api_call)
+
+        return [(api_call["values"][i]["user"]["name"],api_call["values"][i]["permission"]) for i in range(int(api_call["size"]))]
 
     def mirror_repos(self, repo_list, target_scm):
 
@@ -207,7 +336,6 @@ class Project(Instance):
 
 
 class Repository(Project):
-
     def __init__(self, instance, user, key, repo_name):
         self.repo_name = repo_name
         super().__init__(instance, user, key)
