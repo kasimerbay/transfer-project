@@ -1,5 +1,5 @@
 
-# Transfer Bitbucket Project Accross Bitbucket Instances
+# Transfer Project Accross Bitbucket Instances
 
 Transfer your project acrross Bitbucket Data Center Instances and interact Bitbucket via Python Interface.
 
@@ -9,9 +9,11 @@ It uses Python Subprocesses to run REST API ``curl`` options on a Linux VM.
 
 ## Use Case
 
+Two seperate Bitbucket Instances; one for Production one for Backup. This script will transfer the specifed project to Backup instance.
+
 ![Logo](https://github.com/kasimerbay/kasimerbay.github.io/blob/master/transfer-project.jpeg)
 
-You have two seperate instances of Bitbucket. And you want to backup your projects. Give the below parameters and follow the prompts.
+Voala! This is an alternative for Bitbucket Mirror, if it used via cronjob.
 
 ## Usage
 
