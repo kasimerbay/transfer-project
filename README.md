@@ -1,7 +1,7 @@
 
-# Transfer Project Accross Bitbucket Instances
+# Transfer Project Across Bitbucket Instances
 
-Transfer your project acrross Bitbucket Data Center Instances and interact Bitbucket via Python Interface.
+Transfer your project across Bitbucket Data Center Instances and interact Bitbucket via Python Interface.
 
 This project is build on [Bitbucket Data Center REST API 2.0](https://developer.atlassian.com/server/bitbucket/rest/).
 
