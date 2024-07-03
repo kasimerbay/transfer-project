@@ -418,7 +418,7 @@ class Project(Instance):
             if repo_name not in repository_list:
                 Repository(instance=target_scm, user=self.user, key=self.key, repo_name=repo_name).create_repository()
 
-        untracked_repos = [ "acquierissuer_poc", "grpc_loadtest_app", "switch-connector-service_poc", "switch-core-service_poc", "switch-redis-timeout", "thales-ps-hsm", "tr-switch-artifacts", "tr-switch-couchbase-dcp-poc", "tr-switch-couchbase-kafka-connect-poc", "tr-switch-couchbase-multinode-poc", "tr-switch-couchbase-spring-data-poc","tr-switch-net-cap"]
+        untracked_repos = []
 
         for repo_name in repo_list:
             if repo_name not in untracked_repos:
